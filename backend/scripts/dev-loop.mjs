@@ -64,15 +64,25 @@ function onHealthMiss(reason) {
   }
 }
 
+// The tsx CLI wrapper spawns the real backend as a grandchild: signalling
+// only child.pid kills the wrapper and orphans the backend (still polling
+// Telegram/WA → 409 Conflict). Signal the whole process group instead.
+function signalChildTree(proc, signal) {
+  try { process.kill(-proc.pid, signal); } catch { try { proc.kill(signal); } catch {} }
+}
+
 function killChild(signal) {
   if (!child || child.killed) return;
-  try { child.kill(signal); } catch {}
-  // Backstop: if SIGTERM doesn't deliver an exit in 3s, escalate.
+  signalChildTree(child, signal);
+  // Backstop: if SIGTERM doesn't deliver an exit in 3s, escalate — but only
+  // if `child` is still the same process we signalled: after a respawn the
+  // global points to the new child and killing it here would be friendly fire.
   if (signal !== 'SIGKILL') {
+    const target = child;
     setTimeout(() => {
-      if (child && !child.exitCode && !child.killed) {
+      if (child === target && target.exitCode == null && !target.killed) {
         console.warn('[dev-loop] child ignored SIGTERM — escalating to SIGKILL');
-        try { child.kill('SIGKILL'); } catch {}
+        signalChildTree(target, 'SIGKILL');
       }
     }, 3000).unref?.();
   }
@@ -85,7 +95,8 @@ function spawnChild() {
   child = spawn(
     process.execPath,
     [tsxBin, 'src/index.ts'],   // no `watch` — this script owns reloading
-    { stdio: 'inherit', env: process.env },
+    // detached → own process group, so killChild can signal wrapper+backend together
+    { stdio: 'inherit', env: process.env, detached: true },
   );
   child.on('exit', (code, signal) => {
     if (shuttingDown) return;
