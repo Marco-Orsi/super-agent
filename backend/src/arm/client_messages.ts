@@ -16,7 +16,7 @@ import { query } from '../db/index.js';
 import { bus } from '../bus.js';
 import { runClaude } from '../claude/runner.js';
 import { getVaultRoot } from '../brain/vault.js';
-import { isClickUpConfigured, getTasksByStatus, findPreviewLink, setTaskStatus, type ClickUpTask } from '../clickup/client.js';
+import { isClickUpConfigured, getTasksByStatus, findPreviewLink, setTaskStatus, getTaskComments, getChatMessages, type ClickUpTask } from '../clickup/client.js';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -52,6 +52,100 @@ async function loadChecklist(userId: number): Promise<string | null> {
   } catch { return null; }
 }
 
+// ── Contesto a 4 fonti per il draft ─────────────────────────────────────────
+// Il messaggio non nasce più dal solo titolo/descrizione task, ma incrocia:
+//   1. task core (titolo+descrizione)  → FATTI
+//   2. commenti della task ClickUp      → FATTI (qui vivono i dettagli veri)
+//   3. chat ESTERNA col cliente         → continuità/tono, non citare a caso
+//   4. chat INTERNA (Marco/Luca)        → SOLO contesto, MAI citare al cliente
+// Finestra fissa (ultimi N giorni) + tetto messaggi/caratteri per non far
+// esplodere i token. TODO: passare a "dall'ultimo update inviato" quando
+// tracciamo il timestamp d'invio per cliente.
+const CTX_WINDOW_DAYS = 7;
+const CTX_MAX_MSGS = 12;
+const CTX_MAX_CHARS = 400;
+
+type CtxMsg = { who: string; when: string; text: string };
+
+function renderCtx(msgs: CtxMsg[]): string {
+  return msgs.map((m) => `[${m.when}] ${m.who}: ${m.text}`).join('\n');
+}
+
+// Chat ClickUp (canale [EXT] o 🟢 interno) filtrata alla finestra.
+async function readClickUpChannel(channelId: string, sinceMs: number): Promise<CtxMsg[]> {
+  try {
+    const marcoId = process.env.CLICKUP_ASSIGNEE_ID ?? '';
+    const msgs = await getChatMessages(channelId, 50);
+    return msgs
+      .filter((m) => m.dateMs >= sinceMs && m.text.trim())
+      .sort((a, b) => a.dateMs - b.dateMs)
+      .slice(-CTX_MAX_MSGS)
+      .map((m) => ({
+        who: marcoId && m.authorId === marcoId ? 'Marco' : 'altri',
+        when: new Date(m.dateMs).toISOString().slice(0, 10),
+        text: m.text.replace(/\s+/g, ' ').trim().slice(0, CTX_MAX_CHARS),
+      }));
+  } catch { return []; }
+}
+
+// Chat WhatsApp (gruppo o 1:1) dalla tabella wa_messages, filtrata alla finestra.
+async function readWaChat(userId: number, chatJid: string, sinceMs: number): Promise<CtxMsg[]> {
+  try {
+    const rows = await query<{ text: string; ts: string; sender_name: string | null; from_me: boolean }>(
+      `SELECT text, ts, sender_name, from_me FROM wa_messages
+       WHERE user_id=$1 AND chat_jid=$2 AND ts >= to_timestamp($3::double precision / 1000) AND text <> ''
+       ORDER BY ts DESC LIMIT $4`,
+      [userId, chatJid, sinceMs, CTX_MAX_MSGS],
+    );
+    return rows.reverse().map((r) => ({
+      who: r.from_me ? 'Marco' : (r.sender_name || 'cliente'),
+      when: new Date(r.ts).toISOString().slice(0, 10),
+      text: r.text.replace(/\s+/g, ' ').trim().slice(0, CTX_MAX_CHARS),
+    }));
+  } catch { return []; }
+}
+
+// Commenti delle task del batch (dettagli concreti del lavoro fatto).
+async function readTaskComments(tasks: ClickUpTask[], sinceMs: number): Promise<CtxMsg[]> {
+  const out: CtxMsg[] = [];
+  for (const t of tasks) {
+    try {
+      const cs = await getTaskComments(t.id);
+      for (const c of cs) {
+        if (!c.text.trim() || Number(c.date) < sinceMs) continue;
+        out.push({
+          who: `commento · ${t.name.slice(0, 40)}`,
+          when: new Date(Number(c.date)).toISOString().slice(0, 10),
+          text: c.text.replace(/\s+/g, ' ').trim().slice(0, CTX_MAX_CHARS),
+        });
+      }
+    } catch { /* task senza commenti o errore: ignora */ }
+  }
+  return out.sort((a, b) => a.when.localeCompare(b.when)).slice(-CTX_MAX_MSGS);
+}
+
+type MsgContext = { taskComments: CtxMsg[]; externalChat: CtxMsg[]; internalChat: CtxMsg[] };
+
+// Raccoglie le 3 fonti extra (oltre al task core, già nel taskBlock) per il draft.
+async function gatherMessageContext(userId: number, tasks: ClickUpTask[], client: ClientMap): Promise<MsgContext> {
+  const sinceMs = Date.now() - CTX_WINDOW_DAYS * 86_400_000;
+
+  const externalChat = client.channel === 'whatsapp' && client.wa_group_jid
+    ? await readWaChat(userId, client.wa_group_jid, sinceMs)
+    : client.channel === 'clickup' && client.clickup_channel_id
+      ? await readClickUpChannel(client.clickup_channel_id, sinceMs)
+      : [];
+
+  const internalChat = client.internal?.clickup_channel_id
+    ? await readClickUpChannel(client.internal.clickup_channel_id, sinceMs)
+    : client.internal?.wa_group_jid
+      ? await readWaChat(userId, client.internal.wa_group_jid, sinceMs)
+      : [];
+
+  const taskComments = await readTaskComments(tasks, sinceMs);
+  return { taskComments, externalChat, internalChat };
+}
+
 // Generate the message in Marco's tone via a focused Claude turn. Self-contained
 // prompt (no tools, no vault cwd) — just the checklist + task data in, message
 // text out. Throws on empty/failed output so the caller can fall back to the
@@ -75,9 +169,24 @@ function taskForPrompt(t: ClickUpTask, idx: number): string {
   return `Task ${idx + 1}: ${t.name}\n${raw.slice(0, 800)}`;
 }
 
-async function draftBodyLLM(userId: number, client: ClientMap, tasks: ClickUpTask[], previewLink: string | null): Promise<string> {
+async function draftBodyLLM(userId: number, client: ClientMap, tasks: ClickUpTask[], previewLink: string | null, precomputedCtx?: MsgContext): Promise<string> {
   const checklist = await loadChecklist(userId);
   const taskBlock = tasks.map((t, i) => taskForPrompt(t, i)).join('\n\n');
+  const ctx = precomputedCtx ?? await gatherMessageContext(userId, tasks, client);
+
+  // Le 3 fonti extra come sezioni separate, ognuna col suo livello di fiducia.
+  // Solo FATTI può diventare un'affermazione nel messaggio; le chat danno
+  // continuità e tono; l'interno è contesto cieco, mai citabile.
+  const factsExtra = ctx.taskComments.length
+    ? `\n\nCommenti delle task (DETTAGLI CONCRETI del lavoro — usali per essere specifico, sono FATTI affidabili):\n${renderCtx(ctx.taskComments)}`
+    : '';
+  const externalBlock = ctx.externalChat.length
+    ? `\n\n--- SCAMBIO COL CLIENTE (contesto, cosa ha chiesto/aspetta) ---\nUsalo per continuità e tono, NON copiarlo. Serve a capire cosa il cliente sta aspettando.\n${renderCtx(ctx.externalChat)}`
+    : '';
+  const internalBlock = ctx.internalChat.length
+    ? `\n\n--- CONTESTO INTERNO (Marco/Luca) — RISERVATO ---\nSOLO per capire meglio la situazione. VIETATO citarlo, parafrasarlo o rivelarne il contenuto al cliente: qui ci sono note candide del team. Non deve trasparire NULLA di questa sezione nel messaggio.\n${renderCtx(ctx.internalChat)}`
+    : '';
+
   const prompt = [
     'Sei l\'assistente di Marco Orsi (Shopify dev). Scrivi UN messaggio WhatsApp di update per il cliente, riformulando le richieste come LAVORO COMPLETATO.',
     '',
@@ -90,10 +199,13 @@ async function draftBodyLLM(userId: number, client: ClientMap, tasks: ClickUpTas
     `Cliente: ${client.clickup_list_name}. Numero di modifiche: ${tasks.length}.`,
     `Link preview da usare: ${previewLink ?? PREVIEW_PLACEHOLDER}`,
     '',
+    '=== FATTI (l\'UNICA base per ciò che affermi nel messaggio) ===',
     'Dati delle task (la "Richiesta" descrive cosa fare → riformulala come fatto, NON inventare nulla che non sia qui):',
-    taskBlock,
+    taskBlock + factsExtra,
+    externalBlock,
+    internalBlock,
     '',
-    'REGOLA ANTI-INVENZIONE (critica): se una task ha descrizione vuota o troppo generica per sapere COSA CONCRETAMENTE è stato fatto (es. "ottimizzazioni CRO settimanali"), NON inventare la modifica. Al suo posto scrivi il segnaposto {{descrivi le modifiche}} e basta. Meglio un segnaposto che Marco compila, che un messaggio sicuro ma sbagliato.',
+    'REGOLA ANTI-INVENZIONE (critica): se dai FATTI (task + commenti) non si capisce COSA CONCRETAMENTE è stato fatto (es. solo "ottimizzazioni CRO settimanali"), NON inventare la modifica. Al suo posto scrivi il segnaposto {{descrivi le modifiche}} e basta. Le sezioni di contesto (scambio col cliente, interno) NON sono fatti da riportare: servono solo a orientarti. Meglio un segnaposto che Marco compila, che un messaggio sicuro ma sbagliato.',
     '',
     'Output: SOLO il testo del messaggio, pronto da inviare. Nessun preambolo, nessun markdown, nessuna spiegazione.',
     'Il messaggio FINISCE con la riga di chiusura. NON aggiungere dopo: separatori (---), note per Marco, commenti o spiegazioni. Quello che scrivi va dritto al cliente.',
@@ -145,14 +257,27 @@ function nextOpenLabel(d = new Date()): string {
   return 'lunedì alle 9:00';
 }
 
-// ── Client → WhatsApp group mapping ────────────────────────────────────────
+// ── Client → canali mapping ────────────────────────────────────────────────
+// `channel` + i campi wa_/clickup_ a livello radice = canale ESTERNO (verso il
+// cliente), usato per INVIARE. Il blocco `internal` = canale INTERNO (note tra
+// Marco e Luca), usato solo in LETTURA per dare contesto al draft — mai per
+// inviare. Per i clienti Performa l'interno è la chat ClickUp 🟢 col pattern
+// `6-{clickup_list_id}-8`. I clienti diretti non hanno canale interno.
 export type ClientMap = {
   clickup_list_id: string;
   clickup_list_name: string;
+  client_type?: 'performa' | 'direct';
   channel: 'whatsapp' | 'clickup' | null;
   clickup_channel_id?: string | null;
   wa_group_name: string | null;
   wa_group_jid: string | null;
+  wa_is_dm?: boolean;            // true = chat 1:1 (@s.whatsapp.net), non gruppo
+  // Canale interno, sola lettura. Fonte #4 del draft (contesto tra Marco/Luca).
+  internal?: {
+    clickup_channel_id?: string | null;
+    wa_group_jid?: string | null;
+    wa_group_name?: string | null;
+  } | null;
   verified: boolean;
 };
 
@@ -275,6 +400,55 @@ export async function proposeClientMessages(userId: number): Promise<{ created: 
     if (ready) created++; else held++;
   }
   return { created, held, skipped };
+}
+
+// ── Preview (sola lettura): genera il draft arricchito senza inviare né
+// scrivere su DB/Telegram. Utile per test e per un futuro comando "anteprima".
+// Se listId è omesso, prende il primo cliente risolvibile in coda.
+export type DraftPreview = {
+  client: ClientMap;
+  tasks: { id: string; name: string }[];
+  previewLink: string | null;
+  context: { taskComments: number; externalChat: number; internalChat: number };
+  body: string;
+};
+
+export async function previewDraftForClient(userId: number, listId?: string): Promise<DraftPreview> {
+  if (!isClickUpConfigured()) throw new Error('CLICKUP_API_TOKEN non configurato');
+  const tasks = await getTasksByStatus(TRIGGER_STATUS);
+  const byList = new Map<string, ClickUpTask[]>();
+  for (const t of tasks) {
+    if (!t.list?.id) continue;
+    const arr = byList.get(t.list.id) ?? [];
+    arr.push(t);
+    byList.set(t.list.id, arr);
+  }
+
+  let targetList = listId;
+  if (!targetList) {
+    for (const id of byList.keys()) { if (resolveClient(id)) { targetList = id; break; } }
+  }
+  if (!targetList) throw new Error(`nessun cliente risolvibile in stato "${TRIGGER_STATUS}"`);
+  const listTasks = byList.get(targetList);
+  if (!listTasks?.length) throw new Error(`nessuna task in "${TRIGGER_STATUS}" per la list ${targetList}`);
+  const client = resolveClient(targetList);
+  if (!client) throw new Error(`list ${targetList} non presente nella mappa clienti`);
+
+  let previewLink: string | null = null;
+  for (const t of listTasks) {
+    previewLink = await findPreviewLink(t.id).catch(() => null);
+    if (previewLink) break;
+  }
+
+  const ctx = await gatherMessageContext(userId, listTasks, client);
+  const body = await draftBodyLLM(userId, client, listTasks, previewLink, ctx);
+  return {
+    client,
+    tasks: listTasks.map((t) => ({ id: t.id, name: t.name })),
+    previewLink,
+    context: { taskComments: ctx.taskComments.length, externalChat: ctx.externalChat.length, internalChat: ctx.internalChat.length },
+    body,
+  };
 }
 
 // ── Send (shared by approve-in-window and the queue flusher) ────────────────
