@@ -65,6 +65,14 @@ async function resolvePhone(userId: number, jid: string): Promise<string> {
   } catch { return ''; }
 }
 
+// Single-flight lock: startWaForUser sits ~2s in awaits (cooldown, auth state,
+// version fetch) before the session lands in `sessions`, so concurrent callers
+// (status-poll kick + watchdog + close-retry) each built a socket on the SAME
+// auth dir → WA terminated both pre-QR (428) and the paired 3s retries kept the
+// storm alive forever. Timestamped so a crash before registration self-expires
+// instead of wedging WA until the next process restart.
+const waStartInFlight = new Map<number, number>();
+
 export async function startWaForUser(userId: number): Promise<{ ok: boolean; status: string; error?: string }> {
   const existing = sessions.get(userId);
   if (existing) {
@@ -83,6 +91,9 @@ export async function startWaForUser(userId: number): Promise<{ ok: boolean; sta
     try { existing.sock.end(undefined); } catch {}
     sessions.delete(userId);
   }
+  const inflight = waStartInFlight.get(userId);
+  if (inflight && Date.now() - inflight < 30_000) return { ok: true, status: 'starting' };
+  waStartInFlight.set(userId, Date.now());
   const dir = sessionDir(userId);
   await fs.mkdir(dir, { recursive: true });
   // Detect partial / corrupt creds — if creds.json missing or registered=false but other key files present, wipe.
@@ -120,7 +131,11 @@ export async function startWaForUser(userId: number): Promise<{ ok: boolean; sta
     logger,
     version,
     browser: Browsers.macOS('Desktop'),
-    syncFullHistory: true,
+    // Con WA 2.3000.x + Baileys 6.7.18 chiedere la full history fa terminare
+    // il socket PRIMA del QR (428 "Connection Terminated" in loop): il pairing
+    // non parte mai. false = QR ok e WA manda comunque la history recente;
+    // l'archivio lungo vive nelle tabelle wa_*_backup_20260702.
+    syncFullHistory: false,
     markOnlineOnConnect: false,
     printQRInTerminal: false,
     generateHighQualityLinkPreview: false,
@@ -137,6 +152,7 @@ export async function startWaForUser(userId: number): Promise<{ ok: boolean; sta
   const isFreshPair = !credsAny.me?.id && !credsAny.noiseKey;
   const session: Session = { sock, status: 'starting', startedAt: Date.now(), needsHistoryWipe: isFreshPair };
   sessions.set(userId, session);
+  waStartInFlight.delete(userId);
   if (isFreshPair) dlog(`[wa:u${userId}] fresh pair detected — will wipe stale rows on first history batch`);
 
   sock.ev.on('creds.update', saveCreds);
@@ -177,7 +193,11 @@ export async function startWaForUser(userId: number): Promise<{ ok: boolean; sta
       bus.emit('wa:closed', { userId, code });
       // 440 = conflict (another client). Mute — Baileys auto-reconnects.
       if (code !== 440) dlog(`[wa:u${userId}] closed (code=${code}, retry=${shouldRetry})`);
-      sessions.delete(userId);
+      // A close from an OLD socket must not evict the session a newer start
+      // registered, nor schedule its own retry on top of it — that evict→kick
+      // →new-socket→WA-conflict cycle is self-sustaining and QR never lands.
+      const isCurrent = sessions.get(userId) === session;
+      if (isCurrent) sessions.delete(userId);
       // Explicit logout = user disconnected from phone or pressed Reset.
       // Wipe local rows so next pair starts clean (no @lid duplicate stacking).
       if (code === DisconnectReason.loggedOut) {
@@ -187,7 +207,7 @@ export async function startWaForUser(userId: number): Promise<{ ok: boolean; sta
           dlog(`[wa:u${userId}] loggedOut wipe: ${dm[0]?.c ?? 0} messages, ${dc[0]?.c ?? 0} contacts removed`);
         } catch (e) { console.error(`[wa:u${userId}] loggedOut wipe failed`, e); }
       }
-      if (shouldRetry) setTimeout(() => startWaForUser(userId).catch(() => {}), 3000);
+      if (shouldRetry && isCurrent) setTimeout(() => startWaForUser(userId).catch(() => {}), 3000);
     }
   });
 
