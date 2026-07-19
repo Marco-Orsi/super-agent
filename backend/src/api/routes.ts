@@ -121,6 +121,15 @@ router.post('/onboarding/telegram', async (req, res) => {
   res.json({ ok: true, message: 'Bot started. Open Telegram and send /start to link this chat.' });
 });
 
+// Finance dashboard — per-user JSON blob in settings (local Postgres only).
+router.get('/finance', async (req, res) => {
+  res.json({ data: await getSetting<any>(req.user!.id, 'finance') });
+});
+router.put('/finance', async (req, res) => {
+  await setSetting(req.user!.id, 'finance', req.body ?? null);
+  res.json({ ok: true });
+});
+
 router.get('/messages', async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 100), 500);
   const rows = await query(

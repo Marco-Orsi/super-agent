@@ -40,6 +40,7 @@ import Network from './pages/Network';
 import AuthPage from './pages/AuthPage';
 import Snapshots from './pages/Snapshots';
 import Report from './pages/Report';
+import Finance from './pages/Finance';
 import Mail from './pages/Mail';
 import MessageSound from './components/MessageSound';
 import BrainLoading from './components/BrainLoading';
@@ -189,6 +190,7 @@ function AppInner() {
                 <Route path="/team-tasks/:id" element={<TeamTaskDetail />} />
                 <Route path="/snapshots" element={<Snapshots />} />
                 <Route path="/report" element={<Report />} />
+                <Route path="/finance" element={<Finance />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
