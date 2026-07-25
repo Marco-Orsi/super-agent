@@ -78,14 +78,23 @@ export async function startScheduler() {
   bus.removeAllListeners('connector:event');
   bus.on('connector:event', onConnectorEvent);
 
+  // Disattivato su richiesta di Marco (25/07/2026): i ping finivano su Telegram,
+  // che non legge mai — ~5 sessioni Claude al giorno per messaggi mai visti.
+  // Le domande sul lavoro gliele fa Claude Code in sessione, con contesto vivo;
+  // gli allarmi tecnici passano da ~/.claude/brain-alerts.md (letto a inizio
+  // sessione). Riattivabile senza toccare il codice: REFLECTION_CRON=1.
   let reflecting = false;
-  cron.schedule('*/2 * * * *', async () => {
-    if (reflecting) return;
-    reflecting = true;
-    try { await runReflectionAllUsers(); } catch (e) { console.error('[reflection]', e); }
-    finally { reflecting = false; }
-  });
-  console.log('[scheduler] reflection loop armed (every 2m, all users)');
+  if (process.env.REFLECTION_CRON === '1') {
+    cron.schedule('*/2 * * * *', async () => {
+      if (reflecting) return;
+      reflecting = true;
+      try { await runReflectionAllUsers(); } catch (e) { console.error('[reflection]', e); }
+      finally { reflecting = false; }
+    });
+    console.log('[scheduler] reflection loop armed (every 2m, all users)');
+  } else {
+    console.log('[scheduler] reflection loop DISABLED (set REFLECTION_CRON=1 to re-arm)');
+  }
 
   // WA watchdog: every 60s scan active users and restart any WA session that
   // is missing or in a stale 'closed' state. Prevents the agent from sitting
@@ -152,8 +161,17 @@ export async function startScheduler() {
       }
     } finally { snapRunning = false; }
   }
-  cron.schedule('0 0 * * *', () => { runSnapshotSweep('cron').catch(() => {}); }, { timezone: 'Europe/Rome' });
-  console.log('[scheduler] brain-snapshot loop armed (daily 00:00 Europe/Rome)');
+  // Disattivato su richiesta di Marco (25/07/2026): il recupero del brain è già
+  // coperto da git (repo privati llm-wiki + second-brain-memory con commit
+  // quotidiano), lo snapshot serviva solo alla serie storica di crescita del
+  // grafo. Riattivabile senza toccare il codice: BRAIN_SNAPSHOT_CRON=1.
+  // Lo snapshot manuale (trigger 'manual') resta disponibile.
+  if (process.env.BRAIN_SNAPSHOT_CRON === '1') {
+    cron.schedule('0 0 * * *', () => { runSnapshotSweep('cron').catch(() => {}); }, { timezone: 'Europe/Rome' });
+    console.log('[scheduler] brain-snapshot loop armed (daily 00:00 Europe/Rome)');
+  } else {
+    console.log('[scheduler] brain-snapshot loop DISABLED (set BRAIN_SNAPSHOT_CRON=1 to re-arm)');
+  }
 
   // Automation meter: 09:05 Europe/Rome ricalcola il rate rolling-7gg "% task
   // auto-chiuse" e lo appende allo storico KPI del goal "automazione 70%".
