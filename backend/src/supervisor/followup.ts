@@ -3,7 +3,7 @@
 // follow-up al cliente sul suo canale (riusa il braccio), ogni 2 giorni, max 3
 // volte, SOLO nella finestra Lun-Ven 9:00-18:30, e avvisa Marco a ogni invio.
 // Dopo 3 follow-up senza risposta, la palla torna a Marco (lo fa il nudge).
-// Interruttore: setting `autofollowup` (default ON), comando /followups on|off.
+// Interruttore: setting `autofollowup` (default OFF), comando /followups on|off.
 
 import cron from 'node-cron';
 import { query, getSetting } from '../db/index.js';
@@ -38,7 +38,7 @@ function followupText(taskName: string, count: number): string {
 
 async function isEnabled(userId: number): Promise<boolean> {
   const s = await getSetting<{ enabled?: boolean }>(userId, 'autofollowup');
-  return s?.enabled !== false; // default ON
+  return s?.enabled === true; // default OFF: l'invio al cliente resta di Marco (Liv. 1)
 }
 
 type Plan = { task: ClickUpTask; count: number; days: number; text: string; channel: string };
