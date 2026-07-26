@@ -10,6 +10,7 @@ import type { Connector } from '../../types.js';
 import { bus } from '../../../bus.js';
 import { upsertPerson, findPersonByPhone } from '../people/index.js';
 import { query } from '../../../db/index.js';
+import { queueVoiceTranscription } from './voice.js';
 
 // Debug logs gated behind SUPER_AGENT_WA_DEBUG=1. Default off so the console
 // isn't drowned in connection.update spam, history-sync chatter, pic-loop
@@ -406,6 +407,14 @@ async function ingestMessage(userId: number, msg: proto.IWebMessageInfo) {
   // Skip downstream side-effects if message was already in DB (duplicate)
   if (!inserted) return;
   dlog(`[wa:u${userId}] new msg ${id} from ${senderJid} chat=${fromJid}`);
+
+  // Vocale in una chat cliente sorvegliata: si trascrive in background e si
+  // riscrive `text`. Senza questo il messaggio resta '[audio]' e per gli agenti
+  // che leggono le chat non esiste. Fire-and-forget: non deve mai rallentare
+  // né far fallire l'ingestione.
+  if (msg.message?.audioMessage) {
+    try { queueVoiceTranscription(userId, id, fromJid, msg); } catch {}
+  }
 
   bus.emit('wa:message', {
     userId,
