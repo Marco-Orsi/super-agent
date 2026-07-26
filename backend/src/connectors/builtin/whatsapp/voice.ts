@@ -29,7 +29,12 @@ const downloadMediaMessage: any = (baileysPkg as any).downloadMediaMessage
   ?? (baileysPkg as any).default?.downloadMediaMessage;
 
 const VOICE_DIR = path.join(os.homedir(), '.super-agent', 'wa-voice');
-const WHISPER_BIN = process.env.WHISPER_BIN ?? 'whisper';
+// Path assoluto e non 'whisper': il PATH del LaunchAgent non contiene la
+// cartella dei binari Python, quindi per nome fallisce con ENOENT dentro il
+// catch della coda — nessuna trascrizione e nessun errore visibile.
+// `WHISPER_BIN` resta l'override (è impostato anche nel plist).
+const WHISPER_BIN = process.env.WHISPER_BIN
+  ?? '/Library/Frameworks/Python.framework/Versions/3.11/bin/whisper';
 const WHISPER_MODEL = process.env.WHISPER_MODEL ?? 'small';
 const MAX_SECONDI = 15 * 60;   // oltre, non è un vocale: è una registrazione
 
