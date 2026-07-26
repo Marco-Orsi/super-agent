@@ -36,6 +36,7 @@ type Account = {
   pass: string;
   mailbox?: string;
   initialBacklog?: number; // how many recent messages to ingest on first run; default 0 = none
+  batchSize?: number;      // max messages ingested per tick; default 1000 (guards against OOM on big backlogs)
   // SMTP fields (optional). user/pass reused from IMAP unless smtpUser/smtpPass set.
   smtpHost?: string;
   smtpPort?: number;
@@ -304,6 +305,14 @@ const connector: Connector = {
         logger: false,
       });
       let maxUid = lastUid;
+      // Quanti messaggi al massimo per giro. Senza questo tetto, il primo tick
+      // su una casella con anni di storico prova a scaricarne decine di
+      // migliaia in un colpo: il processo va in "heap out of memory", riparte,
+      // e siccome lo stato si salvava solo a fine ciclo ricomincia da zero —
+      // crash loop infinito che porta giu' anche WhatsApp e Telegram.
+      // Con il tetto il backlog entra in piu' giri, riprendendo da lastUid.
+      const batchSize = Math.max(1, Number(acc.batchSize ?? 1000));
+      let processed = 0;
       try {
         await client.connect();
         const lock = await client.getMailboxLock(acc.mailbox || 'INBOX');
@@ -315,17 +324,28 @@ const connector: Connector = {
           const uidNext = (status.uidNext ?? 1) as number;
           const totalMsgs = (status.messages ?? 0) as number;
           let range: string;
+          let from: number;
           if (lastUid > 0) {
             if (lastUid + 1 >= uidNext) { /* nothing new */ continue; }
-            range = `${lastUid + 1}:*`;
+            from = lastUid + 1;
           } else {
             if (totalMsgs === 0) continue;
             const backlog = Math.max(0, acc.initialBacklog ?? 0);
-            const from = backlog > 0 ? Math.max(1, uidNext - backlog) : uidNext;
+            from = backlog > 0 ? Math.max(1, uidNext - backlog) : uidNext;
             if (from >= uidNext) { maxUid = uidNext - 1; continue; }
-            range = `${from}:*`;
             maxUid = from - 1;
           }
+          // Il range e' CHIUSO, non "from:*". Con "*" il server manda l'intero
+          // resto della casella e ImapFlow lo accumula in memoria a prescindere
+          // da quanto in fretta lo consumiamo: su un backlog di anni il processo
+          // muore per "heap out of memory" prima di poter salvare l'avanzamento.
+          // Chiudendo il range a batchSize, ogni giro scarica una fetta e basta.
+          const to = Math.min(uidNext - 1, from + batchSize - 1);
+          if (to < from) continue;
+          range = `${from}:${to}`;
+          // Backlog = stiamo ancora rincorrendo l'archivio, non siamo in coda
+          // alla casella. Serve a non svegliare l'agente su ogni mail vecchia.
+          const isBacklog = to < uidNext - 1;
           for await (const msg of client.fetch(range, { uid: true, source: true })) {
             if (msg.uid <= maxUid) continue;
             try {
@@ -343,17 +363,35 @@ const connector: Connector = {
               }
               // (2) Index as brain note (existing behavior — used by agent)
               const ev = await ingestEmail({ userId: ctx.userId, accountLabel: acc.label, uid: msg.uid, parsed });
-              bus.emit('connector:event', {
-                userId: ctx.userId,
-                connector: 'imap',
-                kind: 'new-email',
-                payload: { account: acc.label, ...ev },
-              });
+              // L'evento fa partire un TURNO PROATTIVO (buildProactivePrompt +
+              // runClaude, vedi scheduler/onConnectorEvent): giusto per la posta
+              // che arriva ora, insensato durante il recupero dello storico —
+              // migliaia di mail d'archivio scatenavano altrettanti turni e
+              // facevano morire il processo per esaurimento memoria.
+              // Durante il backlog si ingerisce e basta.
+              if (!isBacklog) {
+                bus.emit('connector:event', {
+                  userId: ctx.userId,
+                  connector: 'imap',
+                  kind: 'new-email',
+                  payload: { account: acc.label, ...ev },
+                });
+              }
               ctx.log('ingested', { account: acc.label, uid: msg.uid, subj: ev.subj });
             } catch (e) {
               ctx.log('parse-failed', { uid: msg.uid, err: String(e) });
             }
             maxUid = Math.max(maxUid, msg.uid);
+            processed++;
+          }
+          // Il range e' stato scandito tutto: l'avanzamento va portato a `to`,
+          // non all'ultimo uid trovato. Gli uid hanno buchi (messaggi archiviati
+          // o cancellati), quindi una fetta puo' essere vuota: senza questa riga
+          // il segnaposto non si muoverebbe e ogni giro rileggerebbe la stessa
+          // fetta all'infinito.
+          maxUid = Math.max(maxUid, to);
+          if (to < uidNext - 1) {
+            ctx.log('batch-done', { account: acc.label, range, ingeriti: processed, prossimo_da: to + 1, fino_a: uidNext - 1 });
           }
         } finally { lock.release(); }
       } catch (e: any) {
@@ -386,6 +424,9 @@ const connector: Connector = {
         await client.logout().catch(() => {});
       }
       state.lastUid[acc.label] = maxUid;
+      // Salvataggio incrementale: se il giro successivo (o un altro account)
+      // fallisce, l'avanzamento gia' fatto non si perde.
+      await ctx.saveState(state);
     }
     await ctx.saveState(state);
   },

@@ -30,13 +30,13 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 // Seed iniziale: scadenze da simulazione UPF 2026 + pipeline incassi (second brain 19/07/2026)
 function seedData(): FinanceData {
   return {
-    balance: 623,
-    balanceDate: '2026-07-19',
+    balance: 1170,
+    balanceDate: '2026-07-25',
     horizonEnd: '2026-12-31',
     target: 6000,
     items: [
-      { id: uid(), label: 'F24 rata 1', type: 'out', amount: 650.06, date: '2026-07-20', certainty: 'certo' },
-      { id: uid(), label: 'F24 arretrato + ravvedimento (stima)', type: 'out', amount: 450, date: '2026-07-31', certainty: 'certo' },
+      { id: uid(), label: 'F24 arretrato 2025 (addebito Gifupalli)', type: 'out', amount: 437.58, date: '2026-07-20', certainty: 'certo' },
+      { id: uid(), label: 'F24 rata 1 ravveduta', type: 'out', amount: 652, date: '2026-07-31', certainty: 'certo' },
       { id: uid(), label: 'F24 rata 2', type: 'out', amount: 651.94, date: '2026-08-20', certainty: 'certo' },
       { id: uid(), label: 'F24 rata 3', type: 'out', amount: 654.09, date: '2026-09-16', certainty: 'certo' },
       { id: uid(), label: 'F24 rata 4', type: 'out', amount: 656.24, date: '2026-10-16', certainty: 'certo' },
@@ -45,10 +45,11 @@ function seedData(): FinanceData {
       { id: uid(), label: 'F24 rata 6', type: 'out', amount: 660.47, date: '2026-12-16', certainty: 'certo' },
       { id: uid(), label: 'Mensilità Performa', type: 'in', amount: 1250, recurringDay: 10, certainty: 'certo' },
       { id: uid(), label: 'Spese vita (media 2026, stima)', type: 'out', amount: 1400, recurringDay: 1, certainty: 'certo' },
-      { id: uid(), label: 'Gioielli Gentili — rata 1', type: 'in', amount: 550, date: '2026-07-21', certainty: 'probabile' },
-      { id: uid(), label: 'Gioielli Gentili — saldo', type: 'in', amount: 550, date: '2026-08-03', certainty: 'probabile' },
-      { id: uid(), label: 'Stagionello — saldo', type: 'in', amount: 350, date: '2026-07-24', certainty: 'probabile' },
-      { id: uid(), label: 'Bonus Performa Q2', type: 'in', amount: 250, date: '2026-07-27', certainty: 'probabile' },
+      { id: uid(), label: 'Gioielli Gentili — rata 1 (a progetto finito)', type: 'in', amount: 550, date: '2026-08-10', certainty: 'probabile' },
+      { id: uid(), label: 'Gioielli Gentili — saldo (a progetto finito)', type: 'in', amount: 550, date: '2026-08-10', certainty: 'probabile' },
+      { id: uid(), label: 'Stagionello — saldo (a consegna)', type: 'in', amount: 350, date: '2026-08-10', certainty: 'probabile' },
+      { id: uid(), label: 'Bonus Performa Q2 (fattura da emettere)', type: 'in', amount: 400, date: '2026-07-27', certainty: 'probabile' },
+      { id: uid(), label: 'Rimborso villa Portovenere (100%, già incassato)', type: 'in', amount: 931, date: '2026-07-23', certainty: 'certo' },
       { id: uid(), label: 'Gea Pet Shop — rata 1', type: 'in', amount: 400, date: '2026-07-31', certainty: 'incerto' },
       { id: uid(), label: 'Gea Pet Shop — rata 2', type: 'in', amount: 400, date: '2026-08-31', certainty: 'incerto' },
       { id: uid(), label: 'Relief (Enrico)', type: 'in', amount: 390, date: '2026-08-03', certainty: 'incerto' },

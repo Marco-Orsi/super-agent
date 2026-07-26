@@ -6,11 +6,11 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Button, Chip, useToast } from './ui';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { GitMerge, FlaskConical, Scissors, Link2, Check, X, Loader2, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { GitMerge, FlaskConical, Scissors, Link2, Check, X, Loader2, Sparkles, ChevronDown, ChevronRight, AlertTriangle, FileSymlink } from 'lucide-react';
 
 type Proposal = {
   id: number;
-  kind: 'merge' | 'distill' | 'prune' | 'link';
+  kind: string;
   title: string;
   description: string | null;
   payload: any;
@@ -18,12 +18,17 @@ type Proposal = {
   created_at: string;
 };
 
-const KIND_META: Record<Proposal['kind'], { label: string; icon: any; cls: string }> = {
-  merge:   { label: 'Unione',        icon: GitMerge,     cls: 'text-violet-400' },
-  distill: { label: 'Distillazione', icon: FlaskConical, cls: 'text-emerald-400' },
-  prune:   { label: 'Potatura',      icon: Scissors,     cls: 'text-amber-400' },
-  link:    { label: 'Collegamento',  icon: Link2,        cls: 'text-sky-400' },
+const KIND_META: Record<string, { label: string; icon: any; cls: string }> = {
+  merge:           { label: 'Unione',         icon: GitMerge,      cls: 'text-violet-400' },
+  distill:         { label: 'Distillazione',  icon: FlaskConical,  cls: 'text-emerald-400' },
+  prune:           { label: 'Potatura',       icon: Scissors,      cls: 'text-amber-400' },
+  link:            { label: 'Collegamento',   icon: Link2,         cls: 'text-sky-400' },
+  'sync-conflict': { label: 'Conflitto sync', icon: AlertTriangle, cls: 'text-red-400' },
+  'sync-pointer':  { label: 'Puntatore sync', icon: FileSymlink,   cls: 'text-sky-400' },
 };
+
+// Kind sconosciuti (perk futuri) non devono mai far crashare la pagina.
+const KIND_FALLBACK = { label: 'Proposta', icon: Sparkles, cls: 'text-muted-foreground' };
 
 export default function BrainProposals({ onApplied }: { onApplied?: () => void }) {
   const toast = useToast();
@@ -118,7 +123,7 @@ export default function BrainProposals({ onApplied }: { onApplied?: () => void }
             </div>
           )}
           {rows.map((p) => {
-            const meta = KIND_META[p.kind];
+            const meta = KIND_META[p.kind] ?? KIND_FALLBACK;
             const Icon = meta.icon;
             const isExp = expanded === p.id;
             return (
