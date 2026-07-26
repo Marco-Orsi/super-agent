@@ -196,7 +196,9 @@
       "wa_is_dm": true,
       "internal": null,
       "verified": true,
-      "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp."
+      "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp. Identificato il 26/07: la chat esiste (190 msg dal 15/05 al 23/07) ma il contatto @lid non ha nome nel DB, per questo non si trovava ne' per nome ne' per numero.",
+      "wa_read_jid": "239573342920779@lid",
+      "wa_read_name": "(contatto @lid senza nome — identificato dal contenuto: Stagionello)"
     },
     {
       "clickup_list_id": "",
