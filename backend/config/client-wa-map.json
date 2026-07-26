@@ -1,22 +1,245 @@
 {
   "_doc": "Mappa cliente -> canali per il braccio messaggi. Radice (channel + wa_/clickup_) = canale ESTERNO usato per INVIARE al cliente. Blocco `internal` = canale INTERNO (note Marco/Luca), sola LETTURA per dare contesto al draft, MAI usato per inviare. Performa: interno = chat ClickUp 🟢 col pattern 6-{clickup_list_id}-8. Diretti: chat 1:1 WhatsApp (wa_is_dm=true), nessun canale interno, niente clickup_list_id => nessun trigger automatico via task. Il braccio invia SOLO con verified=true e canale esterno valido.",
   "clients": [
-    { "clickup_list_id": "901518211838", "clickup_list_name": "Amiche di Borsette", "client_type": "performa", "channel": "whatsapp", "wa_group_name": "Performa | Amiche di Borsette - Ecommerce", "wa_group_jid": "120363422756482274@g.us", "internal": { "clickup_channel_id": "6-901518211838-8" }, "verified": true },
-    { "clickup_list_id": "901506233321", "clickup_list_name": "Easysea", "client_type": "performa", "channel": "whatsapp", "wa_group_name": "Performa | Easysea - Ecommerce", "wa_group_jid": "120363299345549615@g.us", "internal": { "clickup_channel_id": "6-901506233321-8" }, "verified": true },
-    { "clickup_list_id": "901505185057", "clickup_list_name": "La Gatta Con Gli Stivali", "client_type": "performa", "channel": "whatsapp", "wa_group_name": "Performa | La Gatta Con Gli Stivali - Ecommerce", "wa_group_jid": "120363302034073428@g.us", "internal": { "clickup_channel_id": "6-901505185057-8" }, "verified": true },
-    { "clickup_list_id": "901519996171", "clickup_list_name": "Little America Store", "client_type": "performa", "channel": "whatsapp", "wa_group_name": "Performa | Little America Store - Ecommerce", "wa_group_jid": "120363405814342206@g.us", "internal": { "clickup_channel_id": "6-901519996171-8" }, "verified": true },
-    { "clickup_list_id": "901521715231", "clickup_list_name": "Vimavì Materassi", "client_type": "performa", "channel": "whatsapp", "wa_group_name": "Performa | Vimavi Materassi - Ecommerce", "wa_group_jid": "120363405209699212@g.us", "internal": { "clickup_channel_id": "6-901521715231-8" }, "verified": true },
-    { "clickup_list_id": "901515814487", "clickup_list_name": "Mr Filler", "client_type": "performa", "channel": "whatsapp", "wa_group_name": "[INT] Performa | Mr. Filler - Ecommerce", "wa_group_jid": "120363409226322791@g.us", "internal": { "clickup_channel_id": "6-901515814487-8", "wa_group_jid": "120363409226322791@g.us", "wa_group_name": "[INT] Performa | Mr. Filler - Ecommerce" }, "verified": true, "_note": "Canale d'invio = gruppo WhatsApp [INT] (dove Marco scrive col cliente); l'interno vive anche sulla chat ClickUp 🟢. Verificare se esiste un gruppo cliente separato senza [INT]." },
-    { "clickup_list_id": "901521296844", "clickup_list_name": "Boutique Tones", "client_type": "performa", "channel": "clickup", "clickup_channel_id": "8cnmpfp-6615", "wa_group_name": null, "wa_group_jid": null, "internal": { "clickup_channel_id": "6-901521296844-8" }, "verified": true, "_note": "Esterno = canale Chat [EXT] Boutique Tones" },
-    { "clickup_list_id": "901523466724", "clickup_list_name": "Emanuel Folco", "client_type": "performa", "channel": "clickup", "clickup_channel_id": "8cnmpfp-7135", "wa_group_name": null, "wa_group_jid": null, "internal": { "clickup_channel_id": "6-901523466724-8" }, "verified": true, "_note": "Esterno = canale Chat [EXT] Emanuel Folco" },
-    { "clickup_list_id": "901523746279", "clickup_list_name": "Wikirose", "client_type": "performa", "channel": "clickup", "clickup_channel_id": "8cnmpfp-7335", "wa_group_name": null, "wa_group_jid": null, "internal": { "clickup_channel_id": "6-901523746279-8" }, "verified": true, "_note": "Esterno = canale Chat [EXT] Wikirose" },
-    { "clickup_list_id": "901523768132", "clickup_list_name": "Diva Shopping", "client_type": "performa", "channel": "clickup", "clickup_channel_id": "8cnmpfp-7375", "wa_group_name": null, "wa_group_jid": null, "internal": { "clickup_channel_id": "6-901523768132-8" }, "verified": true, "_note": "Esterno = canale Chat [EXT] Diva Shopping" },
-    { "clickup_list_id": "901518123351", "clickup_list_name": "Be Clinic", "client_type": "performa", "channel": null, "wa_group_name": null, "wa_group_jid": null, "internal": { "clickup_channel_id": "6-901518123351-8" }, "verified": false, "_note": "NON gestito da Marco in Performa — il braccio non lo tocca" },
-    { "clickup_list_id": "901522297410", "clickup_list_name": "GEARXPro", "client_type": "performa", "channel": null, "wa_group_name": null, "wa_group_jid": null, "internal": { "clickup_channel_id": "6-901522297410-8" }, "verified": false, "_note": "RELAY via Luca (ClickUp id 38410184): il messaggio va a Luca, non al cliente. Variante non ancora implementata nel braccio." },
-
-    { "clickup_list_id": "", "clickup_list_name": "Gioielli Gentili", "client_type": "direct", "channel": "whatsapp", "wa_group_name": "Luca Maga", "wa_group_jid": "393450026716@s.whatsapp.net", "wa_is_dm": true, "internal": null, "verified": true, "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp." },
-    { "clickup_list_id": "", "clickup_list_name": "La Cimetta Asolo", "client_type": "direct", "channel": "whatsapp", "wa_group_name": "Alessandra Vegro", "wa_group_jid": "393484631683@s.whatsapp.net", "wa_is_dm": true, "internal": null, "verified": true, "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp." },
-    { "clickup_list_id": "", "clickup_list_name": "Ferdinando Guzzo", "client_type": "direct", "channel": "whatsapp", "wa_group_name": "Ferdinando Guzzo", "wa_group_jid": "393273471259@s.whatsapp.net", "wa_is_dm": true, "internal": null, "verified": true, "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp." },
-    { "clickup_list_id": "", "clickup_list_name": "Gea Pet Shop", "client_type": "direct", "channel": "whatsapp", "wa_group_name": "Rosario Piesco", "wa_group_jid": "393454789781@s.whatsapp.net", "wa_is_dm": true, "internal": null, "verified": true, "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp." }
+    {
+      "clickup_list_id": "901518211838",
+      "clickup_list_name": "Amiche di Borsette",
+      "client_type": "performa",
+      "channel": "whatsapp",
+      "wa_group_name": "Performa | Amiche di Borsette - Ecommerce",
+      "wa_group_jid": "120363422756482274@g.us",
+      "internal": {
+        "clickup_channel_id": "6-901518211838-8"
+      },
+      "verified": true
+    },
+    {
+      "clickup_list_id": "901506233321",
+      "clickup_list_name": "Easysea",
+      "client_type": "performa",
+      "channel": "whatsapp",
+      "wa_group_name": "Performa | Easysea - Ecommerce",
+      "wa_group_jid": "120363299345549615@g.us",
+      "internal": {
+        "clickup_channel_id": "6-901506233321-8"
+      },
+      "verified": true
+    },
+    {
+      "clickup_list_id": "901505185057",
+      "clickup_list_name": "La Gatta Con Gli Stivali",
+      "client_type": "performa",
+      "channel": "whatsapp",
+      "wa_group_name": "Performa | La Gatta Con Gli Stivali - Ecommerce",
+      "wa_group_jid": "120363302034073428@g.us",
+      "internal": {
+        "clickup_channel_id": "6-901505185057-8"
+      },
+      "verified": true
+    },
+    {
+      "clickup_list_id": "901519996171",
+      "clickup_list_name": "Little America Store",
+      "client_type": "performa",
+      "channel": "whatsapp",
+      "wa_group_name": "Performa | Little America Store - Ecommerce",
+      "wa_group_jid": "120363405814342206@g.us",
+      "internal": {
+        "clickup_channel_id": "6-901519996171-8"
+      },
+      "verified": true
+    },
+    {
+      "clickup_list_id": "901521715231",
+      "clickup_list_name": "Vimavì Materassi",
+      "client_type": "performa",
+      "channel": "whatsapp",
+      "wa_group_name": "Performa | Vimavi Materassi - Ecommerce",
+      "wa_group_jid": "120363405209699212@g.us",
+      "internal": {
+        "clickup_channel_id": "6-901521715231-8"
+      },
+      "verified": true
+    },
+    {
+      "clickup_list_id": "901515814487",
+      "clickup_list_name": "Mr Filler",
+      "client_type": "performa",
+      "channel": "whatsapp",
+      "wa_group_name": "[INT] Performa | Mr. Filler - Ecommerce",
+      "wa_group_jid": "120363409226322791@g.us",
+      "internal": {
+        "clickup_channel_id": "6-901515814487-8",
+        "wa_group_jid": "120363409226322791@g.us",
+        "wa_group_name": "[INT] Performa | Mr. Filler - Ecommerce"
+      },
+      "verified": true,
+      "_note": "Canale d'invio = gruppo WhatsApp [INT] (dove Marco scrive col cliente); l'interno vive anche sulla chat ClickUp 🟢. Verificare se esiste un gruppo cliente separato senza [INT]."
+    },
+    {
+      "clickup_list_id": "901521296844",
+      "clickup_list_name": "Boutique Tones",
+      "client_type": "performa",
+      "channel": "clickup",
+      "clickup_channel_id": "8cnmpfp-6615",
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901521296844-8"
+      },
+      "verified": true,
+      "_note": "Esterno = canale Chat [EXT] Boutique Tones"
+    },
+    {
+      "clickup_list_id": "901523466724",
+      "clickup_list_name": "Emanuel Folco",
+      "client_type": "performa",
+      "channel": "clickup",
+      "clickup_channel_id": "8cnmpfp-7135",
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901523466724-8"
+      },
+      "verified": true,
+      "_note": "Esterno = canale Chat [EXT] Emanuel Folco"
+    },
+    {
+      "clickup_list_id": "901523746279",
+      "clickup_list_name": "Wikirose",
+      "client_type": "performa",
+      "channel": "clickup",
+      "clickup_channel_id": "8cnmpfp-7335",
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901523746279-8"
+      },
+      "verified": true,
+      "_note": "Esterno = canale Chat [EXT] Wikirose"
+    },
+    {
+      "clickup_list_id": "901523768132",
+      "clickup_list_name": "Diva Shopping",
+      "client_type": "performa",
+      "channel": "clickup",
+      "clickup_channel_id": "8cnmpfp-7375",
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901523768132-8"
+      },
+      "verified": true,
+      "_note": "Esterno = canale Chat [EXT] Diva Shopping"
+    },
+    {
+      "clickup_list_id": "901518123351",
+      "clickup_list_name": "Be Clinic",
+      "client_type": "performa",
+      "channel": null,
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901518123351-8"
+      },
+      "verified": false,
+      "_note": "NON gestito da Marco in Performa — il braccio non lo tocca"
+    },
+    {
+      "clickup_list_id": "901522297410",
+      "clickup_list_name": "GEARXPro",
+      "client_type": "performa",
+      "channel": null,
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901522297410-8"
+      },
+      "verified": false,
+      "_note": "RELAY via Luca (ClickUp id 38410184): il messaggio va a Luca, non al cliente. Variante non ancora implementata nel braccio."
+    },
+    {
+      "clickup_list_id": "",
+      "clickup_list_name": "Gioielli Gentili",
+      "client_type": "direct",
+      "channel": "whatsapp",
+      "wa_group_name": "Luca Maga",
+      "wa_group_jid": "393450026716@s.whatsapp.net",
+      "wa_is_dm": true,
+      "internal": null,
+      "verified": true,
+      "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp.",
+      "wa_read_jid": "74002420744376@lid",
+      "wa_read_name": "Maga☀️"
+    },
+    {
+      "clickup_list_id": "",
+      "clickup_list_name": "La Cimetta Asolo",
+      "client_type": "direct",
+      "channel": "whatsapp",
+      "wa_group_name": "Alessandra Vegro",
+      "wa_group_jid": "393484631683@s.whatsapp.net",
+      "wa_is_dm": true,
+      "internal": null,
+      "verified": true,
+      "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp.",
+      "wa_read_jid": "11609363746986@lid",
+      "wa_read_name": "Alessandra Vegro Amistani"
+    },
+    {
+      "clickup_list_id": "",
+      "clickup_list_name": "Ferdinando Guzzo",
+      "client_type": "direct",
+      "channel": "whatsapp",
+      "wa_group_name": "Ferdinando Guzzo",
+      "wa_group_jid": "393273471259@s.whatsapp.net",
+      "wa_is_dm": true,
+      "internal": null,
+      "verified": true,
+      "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp."
+    },
+    {
+      "clickup_list_id": "",
+      "clickup_list_name": "Gea Pet Shop",
+      "client_type": "direct",
+      "channel": "whatsapp",
+      "wa_group_name": "Rosario Piesco",
+      "wa_group_jid": "393454789781@s.whatsapp.net",
+      "wa_is_dm": true,
+      "internal": null,
+      "verified": true,
+      "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp.",
+      "wa_read_jid": "3075246948462@lid",
+      "wa_read_name": "Rosario Piesco"
+    },
+    {
+      "clickup_list_id": "",
+      "clickup_list_name": "Cima del Pomer",
+      "client_type": "direct",
+      "channel": "whatsapp",
+      "wa_group_name": "Alessandra Vegro",
+      "wa_group_jid": "393484631683@s.whatsapp.net",
+      "wa_is_dm": true,
+      "internal": null,
+      "verified": true,
+      "shared_channel_with": "La Cimetta Asolo",
+      "_note": "Cliente diretto. STESSA CHAT di La Cimetta Asolo (stessa persona: Alessandra Vegro) — due progetti su un solo canale. Un messaggio da questo JID ha sempre due clienti candidati: l'agente NON deve indovinare, deve chiedere a chi attribuirlo (vedi spec-stato-task-brain sez. 5). Progetto ex 'Cima del Come'; parte dopo il live della Cimetta.",
+      "wa_read_jid": "11609363746986@lid",
+      "wa_read_name": "Alessandra Vegro Amistani"
+    },
+    {
+      "clickup_list_id": "",
+      "clickup_list_name": "Enrico Hu",
+      "client_type": "direct",
+      "channel": "whatsapp",
+      "wa_group_name": "Enrico Hu",
+      "wa_group_jid": "393271874397@s.whatsapp.net",
+      "wa_is_dm": true,
+      "internal": null,
+      "verified": true,
+      "_note": "Prospect diretto (Relief). Chat 1:1 WhatsApp, zero messaggi nel DB al 26/07: la chat non ha traffico dal ri-collegamento WhatsApp. Silente dal 13/07.",
+      "wa_read_jid": "204663815155894@lid",
+      "wa_read_name": "Enrico Hu (Cliente)"
+    }
   ]
 }
