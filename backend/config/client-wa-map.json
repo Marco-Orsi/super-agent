@@ -23,7 +23,15 @@
       "internal": {
         "clickup_channel_id": "6-901506233321-8"
       },
-      "verified": true
+      "verified": true,
+      "theme": {
+        "repo": "Marco-Orsi/shopify-easysea",
+        "path": "~/Projects/easysea/theme-live",
+        "branch": "main",
+        "env": null,
+        "store": "easysea-design-lab.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901505185057",
@@ -35,7 +43,15 @@
       "internal": {
         "clickup_channel_id": "6-901505185057-8"
       },
-      "verified": true
+      "verified": true,
+      "theme": {
+        "repo": "Marco-Orsi/shopify-la-gatta",
+        "path": "~/Projects/clients/la-gatta/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "lagattaconglistivali-store.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901519996171",
@@ -47,7 +63,15 @@
       "internal": {
         "clickup_channel_id": "6-901519996171-8"
       },
-      "verified": true
+      "verified": true,
+      "theme": {
+        "repo": "Marco-Orsi/shopify-little-america",
+        "path": "~/Projects/clients/little-america/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "little-america-store.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901521715231",
@@ -59,7 +83,15 @@
       "internal": {
         "clickup_channel_id": "6-901521715231-8"
       },
-      "verified": true
+      "verified": true,
+      "theme": {
+        "repo": "Marco-Orsi/shopify-vimavi",
+        "path": "~/Projects/clients/vimavi/theme-live",
+        "branch": "main",
+        "env": "default",
+        "store": "vimavimaterassi.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901515814487",
@@ -74,7 +106,16 @@
         "wa_group_name": "[INT] Performa | Mr. Filler - Ecommerce"
       },
       "verified": true,
-      "_note": "Canale d'invio = gruppo WhatsApp [INT] (dove Marco scrive col cliente); l'interno vive anche sulla chat ClickUp 🟢. Verificare se esiste un gruppo cliente separato senza [INT]."
+      "_note": "Canale d'invio = gruppo WhatsApp [INT] (dove Marco scrive col cliente); l'interno vive anche sulla chat ClickUp 🟢. Verificare se esiste un gruppo cliente separato senza [INT].",
+      "theme": {
+        "repo": "Marco-Orsi/shopify-mr-filler",
+        "path": "~/Projects/clients/mr-filler/theme-live",
+        "branch": "main",
+        "env": null,
+        "store": "ad9bf0-0a.myshopify.com",
+        "_note": "in ~/Projects/clients/mr-filler ci sono piu' copie (theme-live-0706/0714/0717/current): quella versionata su git e' theme-live.",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901521296844",
@@ -88,7 +129,15 @@
         "clickup_channel_id": "6-901521296844-8"
       },
       "verified": true,
-      "_note": "Esterno = canale Chat [EXT] Boutique Tones"
+      "_note": "Esterno = canale Chat [EXT] Boutique Tones",
+      "theme": {
+        "repo": "Marco-Orsi/shopify-boutique-tones",
+        "path": "~/Projects/clients/boutique-tones/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "boutiquetones.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901523466724",
@@ -102,7 +151,16 @@
         "clickup_channel_id": "6-901523466724-8"
       },
       "verified": true,
-      "_note": "Esterno = canale Chat [EXT] Emanuel Folco"
+      "_note": "Esterno = canale Chat [EXT] Emanuel Folco",
+      "theme": {
+        "repo": "Marco-Orsi/shopify-emanuel-folco",
+        "path": "~/Projects/clients/emanuel-folco/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "ndk3yt-mp.myshopify.com",
+        "_note": "lo store ndk3yt-mp da 401 con --store: usare --environment live.",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901523746279",
@@ -116,7 +174,15 @@
         "clickup_channel_id": "6-901523746279-8"
       },
       "verified": true,
-      "_note": "Esterno = canale Chat [EXT] Wikirose"
+      "_note": "Esterno = canale Chat [EXT] Wikirose",
+      "theme": {
+        "repo": "Marco-Orsi/shopify-wikirose",
+        "path": "~/Projects/clients/wikirose/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "c745d0.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "901523768132",
@@ -171,7 +237,16 @@
       "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp.",
       "wa_read_jid": "74002420744376@lid",
       "wa_read_name": "Maga☀️",
-      "brain_slug": "gioielli-gentili"
+      "brain_slug": "gioielli-gentili",
+      "theme": {
+        "repo": "Marco-Orsi/gioielli-gentili-theme-laura",
+        "path": "~/Projects/clients/gioielli-gentili/theme-live",
+        "branch": "master",
+        "env": "laura",
+        "store": "gioielli-gentili.myshopify.com",
+        "_note": "repo storico con branch master ed environment 'laura'. CLI: account libero.it, non quello Performa.",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "",
@@ -186,7 +261,15 @@
       "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp.",
       "wa_read_jid": "11609363746986@lid",
       "wa_read_name": "Alessandra Vegro Amistani",
-      "brain_slug": "la-cimetta-asolo"
+      "brain_slug": "la-cimetta-asolo",
+      "theme": {
+        "repo": "Marco-Orsi/shopify-cimetta-asolo",
+        "path": "~/Projects/clients/cimetta-asolo/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "y3errk-4d.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "",
@@ -201,7 +284,15 @@
       "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp. Identificato il 26/07: la chat esiste (190 msg dal 15/05 al 23/07) ma il contatto @lid non ha nome nel DB, per questo non si trovava ne' per nome ne' per numero.",
       "wa_read_jid": "239573342920779@lid",
       "wa_read_name": "(contatto @lid senza nome — identificato dal contenuto: Stagionello)",
-      "brain_slug": "stagionello"
+      "brain_slug": "stagionello",
+      "theme": {
+        "repo": "Marco-Orsi/shopify-stagionello",
+        "path": "~/Projects/clients/stagionello/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "stagionello-hub.myshopify.com",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "",
@@ -216,7 +307,16 @@
       "_note": "Cliente diretto (non Performa). Chat 1:1 WhatsApp. Nessun trigger automatico: non e' su ClickUp.",
       "wa_read_jid": "3075246948462@lid",
       "wa_read_name": "Rosario Piesco",
-      "brain_slug": "gea-pet-shop"
+      "brain_slug": "gea-pet-shop",
+      "theme": {
+        "repo": "Marco-Orsi/shopify-gea-pet-shop",
+        "path": "~/Projects/clients/gea-pet-shop/theme-live",
+        "branch": "main",
+        "env": "live",
+        "store": "gea-pet-shop.myshopify.com",
+        "_note": "main NON e' il tema pubblicato: contiene la bozza GEA 2026. Il live Rawjoy sta nel branch live/rawjoy. Non pullare mai il live dentro main.",
+        "verified": true
+      }
     },
     {
       "clickup_list_id": "",
@@ -249,5 +349,6 @@
       "wa_read_name": "Enrico Hu (Cliente)",
       "brain_slug": "enrico-hu"
     }
-  ]
+  ],
+  "_doc_theme": "Blocco `theme` = dove vive il codice di quel cliente. path = copia canonica locale, repo = fonte di verita' su GitHub, branch = ramo che rispecchia il live, env/store = come puntare lo store con la CLI. verified=false significa che manca un dato per pushare senza indovinare: un agente si ferma e chiede. REGOLE: mai lavorare su main, sempre un branch per task; pull fresco prima di toccare (l'integrazione nativa Shopify<->GitHub NON e' attiva, i repo possono essere stantii se cliente o Luca toccano il Customizer); ogni push passa da safe-push.mjs; il push sul live resta approvato da Marco."
 }

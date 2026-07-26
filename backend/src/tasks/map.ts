@@ -12,6 +12,7 @@
 // indovinare (spec sez. 5).
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import url from 'node:url';
 
@@ -26,7 +27,38 @@ export type TaskClient = {
   readName: string | null;
   sharedWith: string | null; // altro cliente sulla stessa chat
   note: string | null;
+  theme: ClientTheme | null; // dove vive il codice, null se il cliente non ha tema
 };
+
+// Dove lavorare per quel cliente. Senza questo dato un file-task descrive un
+// lavoro da fare ma non dice a nessun agente su quale repo e quale store farlo:
+// e' il pezzo che manca per passare dal riconoscere all'eseguire.
+export type ClientTheme = {
+  repo: string | null;      // "Marco-Orsi/shopify-<cliente>"
+  path: string;             // copia canonica locale, gia' espansa
+  branch: string | null;    // ramo che rispecchia il live
+  env: string | null;       // environment della CLI Shopify
+  store: string | null;     // dominio myshopify, per quando env non c'e'
+  verified: boolean;        // false = manca un dato: fermarsi e chiedere
+  note: string | null;      // avvertenze specifiche di quel tema
+};
+
+function expandHome(p: string): string {
+  return p.startsWith('~/') ? path.join(os.homedir(), p.slice(2)) : p;
+}
+
+function readTheme(raw: any): ClientTheme | null {
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    repo: raw.repo ?? null,
+    path: expandHome(String(raw.path ?? '')),
+    branch: raw.branch ?? null,
+    env: raw.env ?? null,
+    store: raw.store ?? null,
+    verified: raw.verified === true,
+    note: raw._note ?? null,
+  };
+}
 
 function slugify(s: string): string {
   return s
@@ -51,7 +83,30 @@ export function loadReadableClients(): TaskClient[] {
       readName: c.wa_read_name ?? null,
       sharedWith: c.shared_channel_with ?? null,
       note: c._note ?? null,
+      theme: readTheme(c.theme),
     }));
+}
+
+// Tutti i clienti della mappa, anche quelli senza chat di lettura: il tema
+// serve pure ai clienti che non hanno (ancora) un canale WhatsApp sorvegliato.
+export function loadAllClients(): TaskClient[] {
+  const raw = JSON.parse(fs.readFileSync(MAP_PATH, 'utf8')) as { clients: any[] };
+  return raw.clients.map((c) => ({
+    slug: c.brain_slug ?? slugify(c.clickup_list_name ?? c.wa_group_name ?? ''),
+    nome: c.clickup_list_name ?? c.wa_group_name ?? '',
+    tipo: c.client_type === 'direct' ? 'direct' : 'performa',
+    readJid: c.wa_read_jid ?? '',
+    readName: c.wa_read_name ?? null,
+    sharedWith: c.shared_channel_with ?? null,
+    note: c._note ?? null,
+    theme: readTheme(c.theme),
+  }));
+}
+
+// Il tema di un cliente, per slug del brain. null quando il cliente non ne ha
+// uno mappato: chi chiama deve fermarsi, non tirare a indovinare una cartella.
+export function themeForClient(slug: string, all = loadAllClients()): ClientTheme | null {
+  return all.find((c) => c.slug === slug)?.theme ?? null;
 }
 
 // Tutti i clienti che possono stare dietro a una certa chat. Piu' di uno = ogni

@@ -17,7 +17,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
-import { CANDIDATE_DIR, addIgnoredMsgIds, ensureDirs, writeTask, type NewTask } from './store.js';
+import {
+  CANDIDATE_DIR, addIgnoredMsgIds, appendUpdate, ensureDirs, writeTask,
+  type NewTask, type TaskUpdate,
+} from './store.js';
 
 function arg(name: string): string | null {
   const i = process.argv.indexOf(`--${name}`);
@@ -52,6 +55,7 @@ async function main() {
 
   const oggi = new Date().toISOString().slice(0, 10);
   const creati: string[] = [];
+  const aggiornati: string[] = [];
   const saltate: string[] = [];
   const daIgnorare: string[] = [];
   // Una candidata puo' restare in sospeso (campo `chiedi`): in quel caso il file
@@ -59,12 +63,18 @@ async function main() {
   const daArchiviare: string[] = [];
 
   for (const file of files) {
-  const blocchi = fs.readFileSync(file, 'utf8').split(/^=== C\d+ ===\s*$/m).slice(1);
+  // Lo split con gruppi di cattura restituisce anche il tipo del blocco:
+  // ['testa', 'C', '1', '<blocco>', 'U', '1', '<blocco>', ...]
+  const parti = fs.readFileSync(file, 'utf8').split(/^=== ([CU])(\d+) ===\s*$/m);
+  const blocchi: { tipo: string; testo: string }[] = [];
+  for (let i = 1; i + 2 < parti.length + 1; i += 3) {
+    if (parti[i] && parti[i + 2] !== undefined) blocchi.push({ tipo: parti[i], testo: parti[i + 2] });
+  }
   let inSospeso = 0;
 
-  for (const blocco of blocchi) {
-    const { data, content } = matter(blocco.trim());
-    const nome = `${data.cliente}--${data.slug}`;
+  for (const { tipo, testo } of blocchi) {
+    const { data, content } = matter(testo.trim());
+    const nome = tipo === 'U' ? String(data.task ?? '(senza task)') : `${data.cliente}--${data.slug}`;
     const msgIds: string[] = (data.messaggi ?? []).map((m: any) => String(m.id));
 
     if (data.approva !== true) {
@@ -77,6 +87,31 @@ async function main() {
       saltate.push(`${nome} — in attesa di risposta tua: ${data.chiedi}`);
       continue;
     }
+
+    // --- aggiornamento di una task esistente ---
+    if (tipo === 'U') {
+      const id = String(data.task ?? '');
+      const [cliente, ...resto] = id.split('--');
+      const slug = resto.join('--');
+      if (!cliente || !slug) {
+        saltate.push(`(aggiornamento senza task valida) — ignorato`);
+        continue;
+      }
+      const u: TaskUpdate = {
+        cliente, slug,
+        messaggi: (data.messaggi ?? []).map((m: any) => ({ id: String(m.id), sintesi: String(m.sintesi ?? '') })),
+        stato: data.stato ? String(data.stato) : null,
+        stato_ai: data.stato_ai ? String(data.stato_ai) : null,
+        decisione: sezione(content, 'Decisione') || null,
+        prossimo_passo: sezione(content, 'Prossimo passo') || null,
+      };
+      if (dry) { console.log(`[dry] aggiornerei ${id}`); continue; }
+      const r = appendUpdate(u, oggi);
+      if (r.applied) aggiornati.push(`${id} — ${r.nota}`);
+      else saltate.push(`${id} — non aggiornata: ${r.nota}`);
+      continue;
+    }
+
     if (!data.cliente || !data.slug) {
       saltate.push(`(blocco senza cliente o slug) — ignorato`);
       continue;
@@ -124,11 +159,17 @@ async function main() {
 
   console.log(`Create ${creati.length} task:`);
   for (const c of creati) console.log(`  ✓ ${c}`);
+  if (aggiornati.length) {
+    console.log(`\nAggiornate ${aggiornati.length} task esistenti:`);
+    for (const a of aggiornati) console.log(`  ↻ ${a}`);
+  }
   if (saltate.length) {
     console.log(`\nNon create (${saltate.length}):`);
     for (const s of saltate) console.log(`  · ${s}`);
   }
-  console.log(`\nCandidate archiviate in ${path.relative(process.cwd(), doneDir)}`);
+  if (daArchiviare.length) {
+    console.log(`\n${daArchiviare.length} file candidate archiviati in ${path.relative(process.cwd(), doneDir)}`);
+  }
   process.exit(0);
 }
 
