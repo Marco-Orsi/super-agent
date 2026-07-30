@@ -59,22 +59,53 @@ function slugify(name: string) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+// Unione senza duplicati, preservando l'ordine di chi c'era prima.
+function unisci(vecchi: unknown, nuovi?: string[]): string[] {
+  const base = Array.isArray(vecchi) ? vecchi.map(String) : [];
+  const out = [...base];
+  for (const n of nuovi ?? []) if (n && !out.includes(n)) out.push(n);
+  return out;
+}
+
 export async function upsertPerson(userId: number, input: { name: string; aliases?: string[]; emails?: string[]; phones?: string[]; note?: string }) {
   const slug = slugify(input.name);
   const notePath = `people/${slug}.md`;
   const existing = await readNote(userId, notePath);
-  const body = existing
-    ? `${existing.content.trimEnd()}\n\n## ${new Date().toISOString().slice(0,10)}\n${input.note ?? ''}`
-    : `# ${input.name}\n\n## ${new Date().toISOString().slice(0,10)}\n${input.note ?? ''}`;
 
-  await writeNote(userId, notePath, {
-    kind: 'person',
-    title: input.name,
-    aliases: input.aliases ?? existing?.data.aliases ?? [],
-    emails: input.emails ?? existing?.data.emails ?? [],
-    phones: input.phones ?? existing?.data.phones ?? [],
-    tags: ['person'],
-  }, body);
+  // Il body cresce per aggiunta, ma una nota identica non si ripete: senza
+  // questo controllo la stessa email vista due volte scriveva due righe uguali
+  // (158 duplicati esatti nel profilo di Marco al 26/07/2026).
+  const nota = (input.note ?? '').trim();
+  const giaPresente = Boolean(nota && existing?.content.includes(nota));
+  const body = existing
+    ? (giaPresente || !nota
+        ? existing.content
+        : `${existing.content.trimEnd()}\n\n## ${new Date().toISOString().slice(0,10)}\n${nota}`)
+    : `# ${input.name}\n\n## ${new Date().toISOString().slice(0,10)}\n${nota}`;
+
+  // ⚠️ Il frontmatter si FONDE, non si ricostruisce. Ricostruirlo cancellava i
+  // campi curati a mano che questo connettore non conosce — `related`,
+  // `visibility`, `updated`, un `kind` diverso da person — ed e' cosi' che il
+  // 26/07/2026 tre profili scritti da Marco sono stati sovrascritti dal primo
+  // giro di posta (people/marco-orsi.md: note personali → 9.997 righe di log).
+  // Regola: il connettore aggiunge cio' che sa, non decide cosa c'era prima.
+  const fm = {
+    ...(existing?.data ?? {}),
+    kind: existing?.data?.kind ?? 'person',
+    title: existing?.data?.title ?? input.name,
+    aliases: unisci(existing?.data?.aliases, input.aliases),
+    emails: unisci(existing?.data?.emails, input.emails),
+    phones: unisci(existing?.data?.phones, input.phones),
+    tags: unisci(existing?.data?.tags, ['person']),
+  };
+
+  // Niente da aggiungere = niente scrittura: un file riscritto identico sporca
+  // il git status e fa sembrare cambiato quello che non lo e'.
+  const fmInvariato =
+    existing && JSON.stringify(fm) === JSON.stringify({ ...existing.data, ...fm });
+  if (!existing || !fmInvariato || body !== existing.content) {
+    await writeNote(userId, notePath, fm, body);
+  }
 
   await query(
     `INSERT INTO people(user_id,slug,name,aliases,emails,phones,note_path)

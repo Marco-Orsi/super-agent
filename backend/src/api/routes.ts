@@ -11,6 +11,7 @@ import { bus } from '../bus.js';
 import { runTick } from '../scheduler/index.js';
 import { listTools, invokeTool } from '../connectors/tools.js';
 import { requireUser } from '../auth/index.js';
+import { listPosts, postsDir } from '../linkedin/posts.js';
 
 export const router = Router();
 
@@ -128,6 +129,33 @@ router.get('/finance', async (req, res) => {
 router.put('/finance', async (req, res) => {
   await setSetting(req.user!.id, 'finance', req.body ?? null);
   res.json({ ok: true });
+});
+
+// LinkedIn — i post li scrive la routine come file .md nella wiki, qui si
+// leggono e basta. L'unico dato nostro è lo stato (da pubblicare / pubblicato),
+// tenuto in settings così i file della wiki restano di sola lettura.
+type LinkedinState = Record<string, { status: 'ready' | 'published'; publishedAt?: string }>;
+router.get('/linkedin/posts', async (req, res) => {
+  const includeDrafts = req.query.drafts === '1';
+  const [posts, state] = await Promise.all([
+    listPosts(includeDrafts),
+    getSetting<LinkedinState>(req.user!.id, 'linkedin'),
+  ]);
+  const st = state ?? {};
+  res.json({
+    dir: postsDir(),
+    posts: posts.map((p) => ({ ...p, status: st[p.id]?.status ?? 'ready', publishedAt: st[p.id]?.publishedAt ?? null })),
+  });
+});
+router.put('/linkedin/posts/:id', async (req, res) => {
+  const status = req.body?.status;
+  if (status !== 'ready' && status !== 'published') return res.status(400).json({ error: 'status must be ready|published' });
+  const st = (await getSetting<LinkedinState>(req.user!.id, 'linkedin')) ?? {};
+  st[req.params.id] = status === 'published'
+    ? { status, publishedAt: req.body?.publishedAt || new Date().toISOString() }
+    : { status };
+  await setSetting(req.user!.id, 'linkedin', st);
+  res.json({ ok: true, entry: st[req.params.id] });
 });
 
 router.get('/messages', async (req, res) => {

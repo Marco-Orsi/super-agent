@@ -25,12 +25,13 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWhatsapp, faInstagram } from '@fortawesome/free-brands-svg-icons';
+import { faWhatsapp, faInstagram, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import {
   Activity, Plug, Brain, Map as MapIcon, ListChecks, Zap, Sparkles,
   Share2, ScrollText, Settings as SettingsIcon, LogOut, MessageCircle,
   Users as UsersIcon, Send, Bot, Network as NetworkIcon, Workflow,
   Camera as IgIcon, type LucideIcon, ChevronsUpDown, Archive, LineChart, Wallet, Mail as MailIcon,
+  PenLine,
 } from 'lucide-react';
 
 function humanizeIn(ms: number): string {
@@ -123,6 +124,7 @@ export default function AppSidebar() {
     { to: '/snapshots', label: 'Snapshot', icon: Archive },
     { to: '/report', label: 'Report', icon: LineChart },
     { to: '/finance', label: 'Finanze', icon: Wallet },
+    { to: '/linkedin', label: 'LinkedIn', icon: PenLine },
     { to: '/settings', label: t('nav.settings'), icon: SettingsIcon },
   ] as NavItem[]).filter((it) => !it.gate || isVisible(it.gate as PageKey));
 
@@ -166,6 +168,7 @@ export default function AppSidebar() {
               // pop visually in the list. Other rows keep lucide line icons.
               const brand = it.to === '/whatsapp' ? faWhatsapp
                           : it.to === '/instagram' ? faInstagram
+                          : it.to === '/linkedin' ? faLinkedin
                           : null;
               return (
                 <SidebarMenuItem key={it.to}>

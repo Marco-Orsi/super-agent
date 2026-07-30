@@ -42,6 +42,27 @@ export type EmailIngestInput = {
   parsed: ParsedMail;
 };
 
+// SPENTO DI PROPOSITO (26/07/2026). Il primo giro di posta ha creato 367 profili
+// in people/ — no-reply, mail-delivery-subsystem, apple-tv — contro i 59 veri, e
+// ha sommerso tre profili curati a mano. La generazione da email riparte solo se
+// qualcuno la accende apposta, e allora passa dal filtro qui sotto.
+// Per riaccenderla: PEOPLE_FROM_EMAIL=1 nell'ambiente del backend.
+const PEOPLE_DA_EMAIL = process.env.PEOPLE_FROM_EMAIL === '1';
+
+// Un indirizzo che non risponde non e' una persona che conosci. Questi mittenti
+// producono profili che nessuno leggera' mai e che rendono `people/` inservibile
+// come rubrica.
+const NON_PERSONE = /^(no-?reply|noreply|do-?not-?reply|donotreply|mailer-daemon|postmaster|notifications?|notify|alerts?|automated|auto-?confirm|bounce|newsletter|news|info|support|help|billing|invoice|receipts?|orders?|team|hello|contact|admin|webmaster|security|marketing|updates?)(\+.*)?@/i;
+
+function sembraPersona(address: string, name: string): boolean {
+  if (NON_PERSONE.test(address)) return false;
+  // "Nuovo Login su Vimar Cloud" come nome persona: se il nome e' l'indirizzo
+  // stesso o una frase, non c'e' una persona dietro.
+  if (name.includes('@') && name !== address) return false;
+  if (name.split(/\s+/).length > 4) return false;
+  return true;
+}
+
 export async function ingestEmail({ userId, accountLabel, uid, parsed }: EmailIngestInput) {
   const subj = parsed.subject ?? '(no subject)';
   const date = (parsed.date ?? new Date()).toISOString();
@@ -51,15 +72,18 @@ export async function ingestEmail({ userId, accountLabel, uid, parsed }: EmailIn
   const all = [...from, ...to, ...cc];
 
   const personLinks: string[] = [];
-  for (const p of all) {
-    try {
-      const { slug } = await upsertPerson(userId, {
-        name: p.name,
-        emails: [p.address],
-        note: `Seen in email "${subj}" on ${date.slice(0, 10)} (${accountLabel})`,
-      });
-      personLinks.push(`[[people/${slug}]]`);
-    } catch {}
+  if (PEOPLE_DA_EMAIL) {
+    for (const p of all) {
+      if (!sembraPersona(p.address, p.name)) continue;
+      try {
+        const { slug } = await upsertPerson(userId, {
+          name: p.name,
+          emails: [p.address],
+          note: `Seen in email "${subj}" on ${date.slice(0, 10)} (${accountLabel})`,
+        });
+        personLinks.push(`[[people/${slug}]]`);
+      } catch {}
+    }
   }
 
   const body = emailBodyText(parsed).slice(0, 8000);

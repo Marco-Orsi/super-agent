@@ -225,6 +225,60 @@
       "_note": "RELAY via Luca (ClickUp id 38410184): il messaggio va a Luca, non al cliente. Variante non ancora implementata nel braccio."
     },
     {
+      "clickup_list_id": "901524474720",
+      "clickup_list_name": "Fratelli Piras",
+      "client_type": "performa",
+      "channel": "clickup",
+      "clickup_channel_id": "8cnmpfp-8035",
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901524474720-8"
+      },
+      "verified": true,
+      "_note": "Aggiunto 26/07 dal briefing: era gia' su ClickUp ma fuori mappa. Esterno = canale Chat [EXT] Fratelli Piras. Nessun gruppo WhatsApp. Nessun tema locale: si chiede, non si indovina."
+    },
+    {
+      "clickup_list_id": "901524686821",
+      "clickup_list_name": "Ultras Shop OFC",
+      "client_type": "performa",
+      "channel": "clickup",
+      "clickup_channel_id": "8cnmpfp-8295",
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901524686821-8"
+      },
+      "verified": true,
+      "_note": "Aggiunto 26/07 dal briefing. Esterno = canale Chat [EXT] Ultras Shop OFC. Nessun gruppo WhatsApp, nessun tema locale."
+    },
+    {
+      "clickup_list_id": "901524294691",
+      "clickup_list_name": "Ykena Beauty",
+      "client_type": "performa",
+      "channel": null,
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901524294691-8"
+      },
+      "verified": false,
+      "_note": "Aggiunto 26/07 dal briefing (Marco lo pronuncia 'I Kenya Beauty'). Lista ClickUp marcata arancione. NESSUN canale esterno trovato: niente [EXT] su ClickUp, niente gruppo WhatsApp -> il braccio non puo' inviare, si chiede a Marco qual e' il canale."
+    },
+    {
+      "clickup_list_id": "901503426166",
+      "clickup_list_name": "Mondopanna",
+      "client_type": "performa",
+      "channel": null,
+      "wa_group_name": null,
+      "wa_group_jid": null,
+      "internal": {
+        "clickup_channel_id": "6-901503426166-8"
+      },
+      "verified": false,
+      "_note": "Aggiunto 26/07 dal briefing. Lista ClickUp marcata rossa (clienti fermi/chiusi) e nessun canale esterno trovato: verificare con Marco se e' ancora attivo prima di trattarlo come cliente vivo."
+    },
+    {
       "clickup_list_id": "",
       "clickup_list_name": "Gioielli Gentili",
       "client_type": "direct",

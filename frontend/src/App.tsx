@@ -41,6 +41,7 @@ import AuthPage from './pages/AuthPage';
 import Snapshots from './pages/Snapshots';
 import Report from './pages/Report';
 import Finance from './pages/Finance';
+import LinkedinPage from './pages/Linkedin';
 import Mail from './pages/Mail';
 import MessageSound from './components/MessageSound';
 import BrainLoading from './components/BrainLoading';
@@ -191,6 +192,7 @@ function AppInner() {
                 <Route path="/snapshots" element={<Snapshots />} />
                 <Route path="/report" element={<Report />} />
                 <Route path="/finance" element={<Finance />} />
+                <Route path="/linkedin" element={<LinkedinPage />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

@@ -279,6 +279,9 @@ export const api = {
   report: (range: '7d' | '30d' | '90d' | 'all' = '30d') => req<any>(`/report?range=${range}`),
   financeGet: () => req<{ data: any }>('/finance'),
   financeSave: (data: any) => req<{ ok: boolean }>('/finance', { method: 'PUT', body: JSON.stringify(data) }),
+  linkedinPosts: (drafts = false) => req<{ dir: string; posts: any[] }>(`/linkedin/posts${drafts ? '?drafts=1' : ''}`),
+  linkedinSetStatus: (id: string, status: 'ready' | 'published') =>
+    req<{ ok: boolean; entry: any }>(`/linkedin/posts/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ status }) }),
   // ----- MAIL CLIENT -----
   mailAccounts: () => req<{ accounts: { label: string; address: string; host: string; mailbox: string }[] }>('/mail/accounts'),
   mailList: (opts: { account?: string; folder?: string; q?: string; unread?: boolean; limit?: number; offset?: number } = {}) => {
